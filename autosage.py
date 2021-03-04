@@ -1,3 +1,4 @@
+import sys
 from time import sleep
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
@@ -5,36 +6,99 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import Select
 
-opts = Options()
-opts.headless = True
-browser = Firefox(options=opts)
 BEATSAGE = 'https://beatsage.com/#'
 
-def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb apparently
-    x = object.location['x']
-    y = object.location['y']
-    scroll_by_coord = 'window.scrollTo(%s,%s);' % (
-        x,
-        y+offset
-    )
-    passed_in_driver.execute_script(scroll_by_coord)
+def setOptions(args):
+	difficulties = []
+	gamemodes = []
+	events = []
+	if 'n' in args:
+		difficulties.append("Normal")
+	if 'h' in args:
+		difficulties.append("Hard")
+	if 'e' in args:
+		difficulties.append("Expert")
+	if 'ep' in args:
+		difficulties.append("ExpertPlus")
+	if 's' in args:
+		gamemodes.append("Standard")
+	if '90' in args:
+		gamemodes.append("90Degree")
+	if 'no' in args:
+		gamemodes.append("NoArrows")
+	if '1s' in args:
+		gamemodes.append("OneSaber")
+	if 'b' in args:
+		events.append("Bombs")
+	if 'db' in args:
+		events.append("DotBlocks")
+	if 'o' in args:
+		events.append("Obstacles")
 
-def askForOptions():
+	if 'default' in args:
+		environment = "DefaultEnvironment"
+    elif 'origins' in args:
+    	environment = "Origins"
+    elif 'triangle' in args:
+    	environment = "TriangleEnvironment"
+    elif 'nice' in args:
+    	environment = "NiceEnvironment"
+    elif 'big mirror' in args:
+    	environment = "BigMirrorEnvironment"
+    elif 'imagine dragons' in args:
+    	environment = "DragonsEnvironment"
+    elif 'kda' in args:
+    	environment = "KDAEnvironment"
+    elif 'monstercat' in args:
+    	environment = "MonstercatEnvironment"
+    elif 'crab rave' in args:
+    	environment = "CrabRaveEnvironment"
+    elif 'panic at the disco' in args:
+    	environment = "PanicEnvironment"
+    elif 'rocket league' in args:
+    	environment = "RocketEnvironment"
+    elif 'green day' in args:
+    	environment = "GreenDayEnvironment"
+    elif 'green day grenade' in args:
+    	environment = "GreenDayGrenadeEnvironment"
+    elif 'timbaland' in args:
+    	environment = "TimbalandEnvironment"
+    elif 'fitbeat' in args:
+    	environment = "FitBeatEnvironment"
+    elif 'linkin park' in args:
+    	environment = "LinkinParkEnvironment"
+
+    if 'v2' in args:
+    	model = "v2"
+    elif 'v2f' in args:
+    	model = "v2-flow"
+    elif 'v1' in args:
+    	model = "v1"
+
+	#Temporary hard codes for ease of testing
 	difficulties = ["Hard", "Expert", "ExpertPlus"]
 	gamemodes = ["Standard", "90Degree"]
 	events = ["Bombs", "DotBlocks", "Obstacles"]
-	options = [difficulties, gamemodes, events]
+	environment = "DefaultEnvironment"
+	model = "v2-flow"
+
+	options = [difficulties, gamemodes, events, environment, model]
 	return options
 
-def askForPlaylist():
-	print("Paste a link to a youtube playlist you want to beat sage en masse: ")
-	playlist = ["https://www.youtube.com/watch?v=tLyRpGKWXRs&list=PLadVUcdkRukLWYxF_mg6XEuxSmTmLuv2C&index=14"]
-	return playlist
+def setLinks(playlist):
+	#Code to seperate playlist into individual youtube links
+	links = ["https://www.youtube.com/watch?v=tLyRpGKWXRs&list=PLadVUcdkRukLWYxF_mg6XEuxSmTmLuv2C&index=14", "https://www.youtube.com/watch?v=kMmtcZgBYX4"]
+	return links
 
 def main(links, options):
-	difficulties = ["Hard", "Expert", "ExpertPlus"]
-	gamemodes = ["Standard", "90Degree"]
-	events = ["Bombs", "DotBlocks", "Obstacles"]
+	opts = Options()
+	opts.headless = True
+	browser = Firefox(options=opts)
+	difficulties = options[0]
+	gamemodes = options[1]
+	events = options[2]
+	environment = options[3]
+	model = options[4]
 	for link in links:
 		browser.get(BEATSAGE)
 		actions = ActionChains(browser)
@@ -89,9 +153,8 @@ def main(links, options):
 		browser.execute_script("arguments[0].setAttribute(\"style\", \"\")", div)
 		env = Select(advsettings[0])
 		model = Select(advsettings[1])
-		env.select_by_value("DefaultEnvironment")
-		model.select_by_value("v2-flow")
-		sleep(1)
+		env.select_by_value(environment)
+		model.select_by_value(model)
 
 		#Submit and have it start working on your song
 		g = browser.find_element_by_id('bottom') #top rect says cant click
@@ -117,10 +180,66 @@ def main(links, options):
 
 		print("Sleeping for 180")
 		sleep(180)
-
+	print("Done.")
 	browser.close()
 
+def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb apparently
+    x = object.location['x']
+    y = object.location['y']
+    scroll_by_coord = 'window.scrollTo(%s,%s);' % (
+        x,
+        y+offset
+    )
+    passed_in_driver.execute_script(scroll_by_coord)
+
 if __name__ == "__main__":
-   links = askForPlaylist()
-   opts = askForOptions()
-   main(links, opts)
+	if len(sys.argv) == 1:
+		print(" HOW TO USE: ")
+		print("""
+ Copy paste your playlist link, followed by every BeatSage option you want ticked ON, with a space between each! \n
+ Example with all options on, environment default, model set to V2-Flow:
+ python autosage.py https://www.youtube.com/watch?v=q6EoRBvdVPQ&list=PLZ4DbyIWUwCq4V8bIEa8jm2ozHZVuREJP n h e ep s 90 no 1s b db o default v2f
+
+	List of options:
+
+	n - Normal
+	h - Hard
+	e - Expert
+	ep - Expert Plus
+	s - Standard
+	90 - 90 Degrees
+	no - No Arrows
+	1s - One Saber
+	b - Bombs
+	db - Dot Blocks
+	o - Obstacles
+
+	Environments:
+
+	default
+	origins
+	triangle
+	nice
+	big mirror
+	imagine dragons
+	kda
+	monstercat
+	crab rave
+	panic at the disco
+	rocket league
+	green day
+	green day grenade
+	timbaland
+	fitbeat
+	linkin park
+
+	Models:
+
+	v2
+	v2f
+	v1
+			""")
+		quit()
+	links = setLinks(sys.argv[1])
+	opts = setOptions(sys.argv[2:])
+	main(links, opts)
