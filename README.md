@@ -11,3 +11,5 @@ Get started:
     python autosage.py
 4. This will launch the script, and it will explain how to use every option currently available on BeatSage within the script
 5. Enjoy!
+
+Note: This script relies on files not being added or removed from the folder the script resides in, while it is running. Don't add, create, or remove any files from wherever you placed autosage.py while its running or it may crash!
