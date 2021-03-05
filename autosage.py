@@ -98,6 +98,13 @@ def main(links, options):
 	events = options[2]
 	environment = options[3]
 	model = options[4]
+	print("Your selected difficulties: " + str(difficulties))
+	print("Your selected gamemodes: " + str(gamemodes))
+	print("Your selected events: " + str(events))
+	print("Your environment: " + environment)
+	print("Your model: " + model)
+	print("Do CTRL+C (CMD+C on Mac) if any of these seem wrong to fix them before continuing.\n")
+	sleep(1)
 	opts = Options()
 	opts.headless = True
 	opts.set_preference("browser.download.folderList", 2) #Download to whatever is stated two lines below
@@ -208,6 +215,16 @@ def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb appar
 	)
 	passed_in_driver.execute_script(scroll_by_coord)
 
+def unzipandclean(): #Unzips any zip files in cwd and deletes the zip files. Unused in main, meant for if there is a crash or something and user wants to mass unzip
+	for file in os.listdir(os.getcwd()):
+		if file.endswith(".zip"):
+			print("Unzipping " + str(file))
+			with zipfile.ZipFile(file, 'r') as zip_ref:
+				zip_ref.extractall(os.getcwd() + "/" + file[0:-4])
+			print("Done. \n Deleting zip file")
+			os.remove(file)
+	print("Done.")
+
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
 		print(" HOW TO USE: ")
@@ -230,7 +247,11 @@ if __name__ == "__main__":
 	db - Dot Blocks
 	o - Obstacles
 
-	Environments:
+	Misc options:
+
+	unzip - If there is an issue during the runtime of the script, or you just wanted to, this will mass unzip all zipped folders and delete the zipped versions, use this option
+
+	Environments (select one):
 
 	default
 	origins
@@ -249,13 +270,16 @@ if __name__ == "__main__":
 	fitbeat
 	linkin park
 
-	Models:
+	Models (select one):
 
 	v2
 	v2f
 	v1
-			""")
+	""")
 		quit()
+	if "unzip" in sys.argv:
+		unzipandclean()
+		exit()
 	links = setLinks(sys.argv[1])
 	opts = setOptions(sys.argv[2:])
 	main(links, opts)
