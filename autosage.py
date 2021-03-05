@@ -1,5 +1,7 @@
 import sys
-from time import sleep
+import os
+import zipfile
+from time import sleep, time
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
@@ -37,43 +39,43 @@ def setOptions(args):
 
 	if 'default' in args:
 		environment = "DefaultEnvironment"
-    elif 'origins' in args:
-    	environment = "Origins"
-    elif 'triangle' in args:
-    	environment = "TriangleEnvironment"
-    elif 'nice' in args:
-    	environment = "NiceEnvironment"
-    elif 'big mirror' in args:
-    	environment = "BigMirrorEnvironment"
-    elif 'imagine dragons' in args:
-    	environment = "DragonsEnvironment"
-    elif 'kda' in args:
-    	environment = "KDAEnvironment"
-    elif 'monstercat' in args:
-    	environment = "MonstercatEnvironment"
-    elif 'crab rave' in args:
-    	environment = "CrabRaveEnvironment"
-    elif 'panic at the disco' in args:
-    	environment = "PanicEnvironment"
-    elif 'rocket league' in args:
-    	environment = "RocketEnvironment"
-    elif 'green day' in args:
-    	environment = "GreenDayEnvironment"
-    elif 'green day grenade' in args:
-    	environment = "GreenDayGrenadeEnvironment"
-    elif 'timbaland' in args:
-    	environment = "TimbalandEnvironment"
-    elif 'fitbeat' in args:
-    	environment = "FitBeatEnvironment"
-    elif 'linkin park' in args:
-    	environment = "LinkinParkEnvironment"
+	elif 'origins' in args:
+		environment = "Origins"
+	elif 'triangle' in args:
+		environment = "TriangleEnvironment"
+	elif 'nice' in args:
+		environment = "NiceEnvironment"
+	elif 'big mirror' in args:
+		environment = "BigMirrorEnvironment"
+	elif 'imagine dragons' in args:
+		environment = "DragonsEnvironment"
+	elif 'kda' in args:
+		environment = "KDAEnvironment"
+	elif 'monstercat' in args:
+		environment = "MonstercatEnvironment"
+	elif 'crab rave' in args:
+		environment = "CrabRaveEnvironment"
+	elif 'panic at the disco' in args:
+		environment = "PanicEnvironment"
+	elif 'rocket league' in args:
+		environment = "RocketEnvironment"
+	elif 'green day' in args:
+		environment = "GreenDayEnvironment"
+	elif 'green day grenade' in args:
+		environment = "GreenDayGrenadeEnvironment"
+	elif 'timbaland' in args:
+		environment = "TimbalandEnvironment"
+	elif 'fitbeat' in args:
+		environment = "FitBeatEnvironment"
+	elif 'linkin park' in args:
+		environment = "LinkinParkEnvironment"
 
-    if 'v2' in args:
-    	model = "v2"
-    elif 'v2f' in args:
-    	model = "v2-flow"
-    elif 'v1' in args:
-    	model = "v1"
+	if 'v2' in args:
+		model = "v2"
+	elif 'v2f' in args:
+		model = "v2-flow"
+	elif 'v1' in args:
+		model = "v1"
 
 	#Temporary hard codes for ease of testing
 	difficulties = ["Hard", "Expert", "ExpertPlus"]
@@ -91,17 +93,24 @@ def setLinks(playlist):
 	return links
 
 def main(links, options):
-	opts = Options()
-	opts.headless = True
-	browser = Firefox(options=opts)
 	difficulties = options[0]
 	gamemodes = options[1]
 	events = options[2]
 	environment = options[3]
 	model = options[4]
+	opts = Options()
+	opts.headless = True
+	opts.set_preference("browser.download.folderList", 2) #Download to whatever is stated two lines below
+	opts.set_preference("browser.download.manager.showWhenStarting", False) #Hide download progress
+	opts.set_preference("browser.download.dir", os.getcwd()) #Set directory to download to to wherever this script is
+	opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/zip")
 	for link in links:
+		print("Starting to work on: " + str(link))
+		browser = Firefox(options=opts)
 		browser.get(BEATSAGE)
 		actions = ActionChains(browser)
+
+		fileCount = len([name for name in os.listdir('.') if os.path.isfile(name)])
 		#Find input tag with value Hard, Expert, ExpertPlus, 90Degree, Standard, Bombs, DotBlocks, Obstacles
 		inputs = browser.find_elements(By.TAG_NAME, 'input') #All input tags from page
 		textinputand = inputs[0:2] #the url text field for song, and something else
@@ -110,64 +119,59 @@ def main(links, options):
 		eventinputs = inputs[11:14] #inputs for bombs and other song events
 		advsettings = browser.find_elements(By.TAG_NAME, 'select')
 
-		inputs[0].send_keys(link)
+		inputs[0].send_keys(link) #Add a youtube link to the text field
 		buttons = browser.find_elements(By.TAG_NAME, 'button') #buttons[0] contains the magnifying glass search button we want
 		scrollShim(browser, buttons[0], -550)
 		actions.move_to_element(buttons[0]).click().perform() #Click on the magnifying glass search button
-		
-		#Setting difficulties
+
+		print("Setting difficulties...")
 		for i in diffinputs:
 			if i.get_attribute("value") not in difficulties and i.is_selected():
 				scrollShim(browser, i, -550)
 				actions.move_to_element(i).click().perform()
-				print("I clicked on input: " + i.get_attribute("value") + " and now it is: " + str(i.is_selected()))
 			if i.get_attribute("value") in difficulties and not i.is_selected():
 				scrollShim(browser, i, -550)
 				actions.move_to_element(i).click().perform()
-				print("I clicked on input: " + i.get_attribute("value") + " and now it is: " + str(i.is_selected()))
 
-		#Setting game modes
+		print("Setting game modes...")
 		for i in gamemodeinputs:
 			if i.get_attribute("value") not in gamemodes and i.is_selected():
-				print(i.get_attribute("value") + " was true, setting to false")
 				scrollShim(browser, i, -550)
 				actions.move_to_element(i).click().perform()
 			if i.get_attribute("value") in gamemodes and not i.is_selected():
-				print(i.get_attribute("value") + " was false, setting to true")
 				scrollShim(browser, i, -550)
 				actions.move_to_element(i).click().perform()
 
-		#Setting events
+		print("Setting events...")
 		for i in eventinputs:
 			if i.get_attribute("value") not in events and i.is_selected():
-				print(i.get_attribute("value") + " was true, setting to false")
 				scrollShim(browser, i, -550)
 				actions.move_to_element(i).click().perform()
 			if i.get_attribute("value") in events and not i.is_selected():
-				print(i.get_attribute("value") + " was false, setting to true")
 				scrollShim(browser, i, -550)
 				actions.move_to_element(i).click().perform()
 
-		#Setting environment and model version
+		print("Setting the environment and model version...")
 		div = browser.find_element_by_id("contentIdForA11y1")
 		browser.execute_script("arguments[0].setAttribute(\"style\", \"\")", div)
 		env = Select(advsettings[0])
-		model = Select(advsettings[1])
+		modelversion = Select(advsettings[1])
 		env.select_by_value(environment)
-		model.select_by_value(model)
+		modelversion.select_by_value(model)
 
 		#Submit and have it start working on your song
 		g = browser.find_element_by_id('bottom') #top rect says cant click
 		rect = g.find_element_by_class_name('red')
 		
 		#Temporary submission fix:
+		sleep(2) #Waste two seconds because I'm too fast for beat sage >:)
 		try:
 			rect.click()
 			rect.click()
 			rect.click()
 			rect.click()
 		except Exception as e:
-			Print("Caught exception that isn't my fault because firefox webdriver is fucking stupid")
+			print("Caught exception that isn't my fault because firefox webdriver is stupid")
 		
 		#Below commented out because it would work normally but firefox is again fucking stupid
 		"""scrollShim(browser, rect, -900)
@@ -178,19 +182,31 @@ def main(links, options):
 		actions.release()
 		actions.perform()"""
 
-		print("Sleeping for 180")
-		sleep(180)
+		#Maybe place a loop here that checks for that div popup changing so you can tell if the download started?
+		print("BeatSage is processing this song right now, this is the longest step and could take awhile, usually one to three minutes...")
+		start = time()
+		while(len([name for name in os.listdir('.') if os.path.isfile(name)]) == fileCount): sleep(1)
+		total = time() - start
+		print("Processing and download for this song complete. Time taken: " + str(total)[0:5] + " seconds\n")
+		browser.close()
+	print("Done downloading every beatmap. Unzipping contents to same folder...")
+	for file in os.listdir(os.getcwd()):
+		if file.endswith(".zip"):
+			print("Unzipping " + str(file))
+			with zipfile.ZipFile(file, 'r') as zip_ref:
+				zip_ref.extractall(os.getcwd() + "/" + file[0:-4])
+			print("Done. \n Deleting zip file")
+			os.remove(file)
 	print("Done.")
-	browser.close()
 
 def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb apparently
-    x = object.location['x']
-    y = object.location['y']
-    scroll_by_coord = 'window.scrollTo(%s,%s);' % (
-        x,
-        y+offset
-    )
-    passed_in_driver.execute_script(scroll_by_coord)
+	x = object.location['x']
+	y = object.location['y']
+	scroll_by_coord = 'window.scrollTo(%s,%s);' % (
+		x,
+		y+offset
+	)
+	passed_in_driver.execute_script(scroll_by_coord)
 
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
