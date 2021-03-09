@@ -87,13 +87,6 @@ def setOptions(args):
 	elif 'v1' in args:
 		model = "v1"
 
-	#Temporary hard codes for ease of testing
-	#difficulties = ["Hard", "Expert", "ExpertPlus"]
-	#gamemodes = ["Standard", "90Degree"]
-	#events = ["Bombs", "DotBlocks", "Obstacles"]
-	#environment = "DefaultEnvironment"
-	#model = "v2-flow"
-
 	options = [difficulties, gamemodes, events, environment, model]
 	return options
 
@@ -322,6 +315,6 @@ if __name__ == "__main__":
 	if "unzip" in sys.argv:
 		unzipandclean()
 		exit()
-	links = "" #setLinks(sys.argv[1])
+	links = setLinks(sys.argv[1])
 	opts = setOptions(sys.argv[2:])
 	main(links, opts)
