@@ -3,6 +3,11 @@ Automatically BeatSage entire youtube playlists for Beat Saber
 
 A Python script by Alan
 
+**Dependencies: (aka what you need to even use it)**
+- Python (works with 3.9.x, but it might work with older Python versions as well)
+- FireFox browser (just need to install FireFox on your computer, the script will open FireFox in the background to access the website)
+- selenium (you can quickly install selenium by doing: `pip install selenium` in terminal once Python is installed)
+
 **Get started:**
 
 1. Download autosage.py to your computer.
