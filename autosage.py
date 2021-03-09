@@ -153,7 +153,6 @@ def main(links, options):
 
 		print("Setting difficulties...")
 		for i in diffinputs:
-			print(i.get_attribute("value"))
 			if i.get_attribute("value") not in difficulties and i.is_selected():
 				#scrollShim(browser, i, -550)
 				#actions.move_to_element(i).click().perform()
@@ -233,8 +232,8 @@ def main(links, options):
 		print("BeatSage is processing this song right now, this is the longest step and could take awhile, usually one to three minutes...")
 		start = time()
 		while(len([name for name in os.listdir('.') if os.path.isfile(name)]) == fileCount): sleep(1)
-		total = time() - start
-		print("Processing and download for this song complete. Time taken: " + str(total)[0:5] + " seconds\n")
+		finish = time() - start
+		print("Processing and download for this song complete. Time taken: " + str(finish)[0:5] + " seconds\n")
 		counter += 1
 		browser.close()
 	print("Done downloading every beatmap. Unzipping contents to same folder...")
