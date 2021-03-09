@@ -17,15 +17,19 @@ Note: This script relies on files not being added or removed from the folder the
 
 Example command you can give it, and what it will do:
 
-    python autosage.py https://www.youtube.com/playlist?list=PLadVUcdkRukIb_ekf5J1_ErGPsohB6wE2 e ep b o s 90 origins v2
+`python autosage.py https://www.youtube.com/playlist?list=PLadVUcdkRukIb_ekf5J1_ErGPsohB6wE2 e ep b o s 90 origins v2`
+>e, ep
 
-    e, ep
 Chooses expert and expert plus difficulties for every song in the playlist respectively
-    b, o
+>b, o
+
 b option turns on bombs, and o option turns on obstacles
-    s 90
+>s 90
+
 These two options select Standard mode and 90 Degree mode
-    origins
+>origins
+
 Tells BeatSage you want the environment for every song to be Origins (remember that in game you can always change these anyways!)
-    v2
+>v2
+
 Tells BeatSage you want the model version to be the V2 algorithm
