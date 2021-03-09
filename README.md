@@ -3,7 +3,7 @@ Automatically BeatSage entire youtube playlists for Beat Saber
 
 A Python script by Alan
 
-Get started:
+**Get started:**
 
 1. Download autosage.py to your computer.
 2. Put autosage.py in your custom levels folder (not required but recommended)
@@ -13,18 +13,18 @@ Get started:
 4. This will launch the script, and it will explain how to use every option currently available on BeatSage within the script
 5. Enjoy!
 
-Note: This script relies on files not being added or removed from the folder the script resides in, while it is running. Don't add, create, or remove any files from wherever you placed autosage.py while its running or it may crash!
+**Note:** This script relies on files not being added or removed from the folder the script resides in, while it is running. Don't add, create, or remove any files from wherever you placed autosage.py while its running or it may crash!
 
-Example command you can give it, and what it will do:
+**Example:** Here is a command you can give it, and what it will do:
 
 `python autosage.py https://www.youtube.com/playlist?list=PLadVUcdkRukIb_ekf5J1_ErGPsohB6wE2 e ep b o s 90 origins v2`
->e, ep
+>e and ep
 
 Chooses expert and expert plus difficulties for every song in the playlist respectively
->b, o
+>b and o
 
 b option turns on bombs, and o option turns on obstacles
->s 90
+>s and 90
 
 These two options select Standard mode and 90 Degree mode
 >origins
