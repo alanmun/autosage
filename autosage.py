@@ -14,14 +14,19 @@ def setOptions(args):
 	difficulties = []
 	gamemodes = []
 	events = []
+	environment = "DefaultEnvironment"
+	model = "v2-flow"
 	if 'n' in args:
-		difficulties.append("Normal")
+		if "Normal" not in difficulties: difficulties.append("Normal")
 	if 'h' in args:
-		difficulties.append("Hard")
+		if "Hard" not in difficulties: difficulties.append("Hard")
 	if 'e' in args:
-		difficulties.append("Expert")
+		if "Expert" not in difficulties: difficulties.append("Expert")
 	if 'ep' in args:
-		difficulties.append("ExpertPlus")
+		if "ExpertPlus" not in difficulties: difficulties.append("ExpertPlus")
+	if "n" not in args and 'h' not in args and 'e' not in args and 'ep' not in args: #If none are included, default to all
+		difficulties = ["Normal", "Hard", "Expert", "ExpertPlus"]
+
 	if 's' in args:
 		gamemodes.append("Standard")
 	if '90' in args:
@@ -30,12 +35,17 @@ def setOptions(args):
 		gamemodes.append("NoArrows")
 	if '1s' in args:
 		gamemodes.append("OneSaber")
+	if 's' not in args and '90' not in args and 'no' not in args and '1s' not in args: #If no game modes given, default to Standard only
+		gamemodes = ["Standard"]
+
 	if 'b' in args:
 		events.append("Bombs")
 	if 'db' in args:
 		events.append("DotBlocks")
 	if 'o' in args:
 		events.append("Obstacles")
+	if 'b' not in args and 'db' not in args and 'o' not in args: #If no event options given, default to all
+		events = ["Bombs", "DotBlocks", "Obstacles"]
 
 	if 'default' in args:
 		environment = "DefaultEnvironment"
@@ -78,18 +88,31 @@ def setOptions(args):
 		model = "v1"
 
 	#Temporary hard codes for ease of testing
-	difficulties = ["Hard", "Expert", "ExpertPlus"]
-	gamemodes = ["Standard", "90Degree"]
-	events = ["Bombs", "DotBlocks", "Obstacles"]
-	environment = "DefaultEnvironment"
-	model = "v2-flow"
+	#difficulties = ["Hard", "Expert", "ExpertPlus"]
+	#gamemodes = ["Standard", "90Degree"]
+	#events = ["Bombs", "DotBlocks", "Obstacles"]
+	#environment = "DefaultEnvironment"
+	#model = "v2-flow"
 
 	options = [difficulties, gamemodes, events, environment, model]
 	return options
 
 def setLinks(playlist):
-	#Code to seperate playlist into individual youtube links
-	links = ["https://www.youtube.com/watch?v=tLyRpGKWXRs&list=PLadVUcdkRukLWYxF_mg6XEuxSmTmLuv2C&index=14", "https://www.youtube.com/watch?v=kMmtcZgBYX4"]
+	links = []
+	print("Getting your songs from your playlist...")
+	opts = Options()
+	opts.headless = True
+	browser = Firefox(options=opts)
+	browser.get(playlist)
+	div = browser.find_element_by_id("contents")
+	linksAsATags = div.find_elements(By.TAG_NAME, "a")
+	for link in linksAsATags:
+		if link.get_attribute("class") == "yt-simple-endpoint style-scope ytd-playlist-video-renderer":
+			print(link.text)
+			links.append(link.get_attribute("href"))
+	browser.close()
+	print("Done.")
+	sleep(1)
 	return links
 
 def main(links, options):
@@ -98,6 +121,8 @@ def main(links, options):
 	events = options[2]
 	environment = options[3]
 	model = options[4]
+	counter = 1
+	total = len(links)
 	print("Your selected difficulties: " + str(difficulties))
 	print("Your selected gamemodes: " + str(gamemodes))
 	print("Your selected events: " + str(events))
@@ -109,10 +134,13 @@ def main(links, options):
 	opts.headless = True
 	opts.set_preference("browser.download.folderList", 2) #Download to whatever is stated two lines below
 	opts.set_preference("browser.download.manager.showWhenStarting", False) #Hide download progress
+	opts.set_preference("browser.download.manager.focusWhenStarting", False)
+	opts.set_preference("browser.helperApps.alwaysAsk.force", False)
 	opts.set_preference("browser.download.dir", os.getcwd()) #Set directory to download to to wherever this script is
-	opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/zip")
+	opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/octet-stream")
+	opts.set_preference("browser.helperApps.neverAsk.openFile", "application/octet-stream")
 	for link in links:
-		print("Starting to work on: " + str(link))
+		print("Starting to work on song " + str(counter) + " of " + str(total))
 		browser = Firefox(options=opts)
 		browser.get(BEATSAGE)
 		actions = ActionChains(browser)
@@ -128,35 +156,49 @@ def main(links, options):
 
 		inputs[0].send_keys(link) #Add a youtube link to the text field
 		buttons = browser.find_elements(By.TAG_NAME, 'button') #buttons[0] contains the magnifying glass search button we want
-		scrollShim(browser, buttons[0], -550)
-		actions.move_to_element(buttons[0]).click().perform() #Click on the magnifying glass search button
+		buttons[0].click()
 
 		print("Setting difficulties...")
 		for i in diffinputs:
+			print(i.get_attribute("value"))
 			if i.get_attribute("value") not in difficulties and i.is_selected():
-				scrollShim(browser, i, -550)
-				actions.move_to_element(i).click().perform()
+				#scrollShim(browser, i, -550)
+				#actions.move_to_element(i).click().perform()
+				span = i.find_element(By.XPATH, '..')
+				span.click()
 			if i.get_attribute("value") in difficulties and not i.is_selected():
-				scrollShim(browser, i, -550)
-				actions.move_to_element(i).click().perform()
+				#print("    " + str(i.get_attribute("value")) + "was " + str(i.is_selected()))
+				#scrollShim(browser, i, -550)
+				#actions.move_to_element(i).click().perform()
+				span = i.find_element(By.XPATH, '..')
+				span.click()
+				#print("    " + str(i.get_attribute("value")) + "is now " + str(i.is_selected()))
 
 		print("Setting game modes...")
 		for i in gamemodeinputs:
 			if i.get_attribute("value") not in gamemodes and i.is_selected():
-				scrollShim(browser, i, -550)
-				actions.move_to_element(i).click().perform()
+				#scrollShim(browser, i, -550)
+				#actions.move_to_element(i).click().perform()
+				span = i.find_element(By.XPATH, '..')
+				span.click()
 			if i.get_attribute("value") in gamemodes and not i.is_selected():
-				scrollShim(browser, i, -550)
-				actions.move_to_element(i).click().perform()
+				#scrollShim(browser, i, -550)
+				#actions.move_to_element(i).click().perform()
+				span = i.find_element(By.XPATH, '..')
+				span.click()
 
 		print("Setting events...")
 		for i in eventinputs:
 			if i.get_attribute("value") not in events and i.is_selected():
-				scrollShim(browser, i, -550)
-				actions.move_to_element(i).click().perform()
+				#scrollShim(browser, i, -550)
+				#actions.move_to_element(i).click().perform()
+				span = i.find_element(By.XPATH, '..')
+				span.click()
 			if i.get_attribute("value") in events and not i.is_selected():
-				scrollShim(browser, i, -550)
-				actions.move_to_element(i).click().perform()
+				#scrollShim(browser, i, -550)
+				#actions.move_to_element(i).click().perform()
+				span = i.find_element(By.XPATH, '..')
+				span.click()
 
 		print("Setting the environment and model version...")
 		div = browser.find_element_by_id("contentIdForA11y1")
@@ -170,15 +212,21 @@ def main(links, options):
 		g = browser.find_element_by_id('bottom') #top rect says cant click
 		rect = g.find_element_by_class_name('red')
 		
+		while True:
+			try:
+				divcheck = browser.find_element_by_class_name('nuxt-progress')
+			except Exception as e:
+				print("BeatSage finished loading this song on its webpage, now processing it...")
+				break
+
 		#Temporary submission fix:
-		sleep(2) #Waste two seconds because I'm too fast for beat sage >:)
 		try:
 			rect.click()
 			rect.click()
 			rect.click()
 			rect.click()
 		except Exception as e:
-			print("Caught exception that isn't my fault because firefox webdriver is stupid")
+			pass
 		
 		#Below commented out because it would work normally but firefox is again fucking stupid
 		"""scrollShim(browser, rect, -900)
@@ -189,22 +237,16 @@ def main(links, options):
 		actions.release()
 		actions.perform()"""
 
-		#Maybe place a loop here that checks for that div popup changing so you can tell if the download started?
 		print("BeatSage is processing this song right now, this is the longest step and could take awhile, usually one to three minutes...")
 		start = time()
 		while(len([name for name in os.listdir('.') if os.path.isfile(name)]) == fileCount): sleep(1)
 		total = time() - start
 		print("Processing and download for this song complete. Time taken: " + str(total)[0:5] + " seconds\n")
+		counter += 1
 		browser.close()
 	print("Done downloading every beatmap. Unzipping contents to same folder...")
-	for file in os.listdir(os.getcwd()):
-		if file.endswith(".zip"):
-			print("Unzipping " + str(file))
-			with zipfile.ZipFile(file, 'r') as zip_ref:
-				zip_ref.extractall(os.getcwd() + "/" + file[0:-4])
-			print("Done. \n Deleting zip file")
-			os.remove(file)
-	print("Done.")
+	unzipandclean()
+	print("All finished. Enjoy :)")
 
 def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb apparently
 	x = object.location['x']
@@ -215,15 +257,15 @@ def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb appar
 	)
 	passed_in_driver.execute_script(scroll_by_coord)
 
-def unzipandclean(): #Unzips any zip files in cwd and deletes the zip files. Unused in main, meant for if there is a crash or something and user wants to mass unzip
+def unzipandclean(): #Unzips any zip files in cwd and deletes the zip files.
 	for file in os.listdir(os.getcwd()):
 		if file.endswith(".zip"):
-			print("Unzipping " + str(file))
+			print("Unzipping " + str(file) + "...    ", end="") #end= prevents a newline
 			with zipfile.ZipFile(file, 'r') as zip_ref:
 				zip_ref.extractall(os.getcwd() + "/" + file[0:-4])
 			print("Done. \n Deleting zip file")
 			os.remove(file)
-	print("Done.")
+	print("Done unzipping all files!")
 
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
@@ -280,6 +322,6 @@ if __name__ == "__main__":
 	if "unzip" in sys.argv:
 		unzipandclean()
 		exit()
-	links = setLinks(sys.argv[1])
+	links = "" #setLinks(sys.argv[1])
 	opts = setOptions(sys.argv[2:])
 	main(links, opts)
