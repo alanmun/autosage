@@ -39,4 +39,4 @@ Tells BeatSage you want the environment for every song to be Origins (remember t
 
 Tells BeatSage you want the model version to be the V2 algorithm
 
-If you find this tool really helpful, maybe consider giving [me a tip here? It would be greatly appreciated :D](ko-fi.com/epinephrine)
+If you find this tool really helpful, maybe consider giving [me a tip here? It would be greatly appreciated :D](https://ko-fi.com/epinephrine)
