@@ -90,8 +90,8 @@ def setOptions(args):
 	options = [difficulties, gamemodes, events, environment, model]
 	return options
 
-def setLinks(playlist):
-	links = []
+def setLinks(playlist, check=True):
+	titles = {}
 	print("Getting your songs from your playlist...")
 	opts = Options()
 	opts.headless = True
@@ -102,7 +102,17 @@ def setLinks(playlist):
 	for link in linksAsATags:
 		if link.get_attribute("class") == "yt-simple-endpoint style-scope ytd-playlist-video-renderer":
 			print(link.text)
-			links.append(link.get_attribute("href"))
+			titles[link.get_attribute("title")] = link.get_attribute("href") #Key = title Value = its link
+	'''
+	if check:
+		print("Checking if any songs in the playlist have already been beatsage'd (to skip them)")
+		for folder in (item for item in os.listdir(os.getcwd()) if os.path.isdir(os.getcwd() + "\\" + item)):
+			for title in titles.keys():
+				if title in folder:
+					print(title + " was already found in folder: " + folder + ", skipping")
+					titles[title] = ""
+	links = [i for i in titles.values() if i] #If string is anything but empty string it should be True. "" evals to False
+	'''
 	browser.close()
 	print("Done.")
 	sleep(1)
@@ -133,109 +143,122 @@ def main(links, options):
 	opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/octet-stream")
 	opts.set_preference("browser.helperApps.neverAsk.openFile", "application/octet-stream")
 	for link in links:
-		print("Starting to work on song " + str(counter) + " of " + str(total))
-		browser = Firefox(options=opts)
-		browser.get(BEATSAGE)
-		actions = ActionChains(browser)
-
-		fileCount = len([name for name in os.listdir('.') if os.path.isfile(name)])
-		#Find input tag with value Hard, Expert, ExpertPlus, 90Degree, Standard, Bombs, DotBlocks, Obstacles
-		inputs = browser.find_elements(By.TAG_NAME, 'input') #All input tags from page
-		textinputand = inputs[0:2] #the url text field for song, and something else
-		diffinputs = inputs[2:6] #The inputs for difficulties
-		gamemodeinputs = inputs[6:10] #inputs for game modes, patreon disabled ones removed
-		eventinputs = inputs[11:14] #inputs for bombs and other song events
-		advsettings = browser.find_elements(By.TAG_NAME, 'select')
-
-		inputs[0].send_keys(link) #Add a youtube link to the text field
-		buttons = browser.find_elements(By.TAG_NAME, 'button') #buttons[0] contains the magnifying glass search button we want
-		buttons[0].click()
-
-		print("Setting difficulties...")
-		for i in diffinputs:
-			if i.get_attribute("value") not in difficulties and i.is_selected():
-				#scrollShim(browser, i, -550)
-				#actions.move_to_element(i).click().perform()
-				span = i.find_element(By.XPATH, '..')
-				span.click()
-			if i.get_attribute("value") in difficulties and not i.is_selected():
-				#print("    " + str(i.get_attribute("value")) + "was " + str(i.is_selected()))
-				#scrollShim(browser, i, -550)
-				#actions.move_to_element(i).click().perform()
-				span = i.find_element(By.XPATH, '..')
-				span.click()
-				#print("    " + str(i.get_attribute("value")) + "is now " + str(i.is_selected()))
-
-		print("Setting game modes...")
-		for i in gamemodeinputs:
-			if i.get_attribute("value") not in gamemodes and i.is_selected():
-				#scrollShim(browser, i, -550)
-				#actions.move_to_element(i).click().perform()
-				span = i.find_element(By.XPATH, '..')
-				span.click()
-			if i.get_attribute("value") in gamemodes and not i.is_selected():
-				#scrollShim(browser, i, -550)
-				#actions.move_to_element(i).click().perform()
-				span = i.find_element(By.XPATH, '..')
-				span.click()
-
-		print("Setting events...")
-		for i in eventinputs:
-			if i.get_attribute("value") not in events and i.is_selected():
-				#scrollShim(browser, i, -550)
-				#actions.move_to_element(i).click().perform()
-				span = i.find_element(By.XPATH, '..')
-				span.click()
-			if i.get_attribute("value") in events and not i.is_selected():
-				#scrollShim(browser, i, -550)
-				#actions.move_to_element(i).click().perform()
-				span = i.find_element(By.XPATH, '..')
-				span.click()
-
-		print("Setting the environment and model version...")
-		div = browser.find_element_by_id("contentIdForA11y1")
-		browser.execute_script("arguments[0].setAttribute(\"style\", \"\")", div)
-		env = Select(advsettings[0])
-		modelversion = Select(advsettings[1])
-		env.select_by_value(environment)
-		modelversion.select_by_value(model)
-
-		#Submit and have it start working on your song
-		g = browser.find_element_by_id('bottom') #top rect says cant click
-		rect = g.find_element_by_class_name('red')
-		
-		while True:
-			try:
-				divcheck = browser.find_element_by_class_name('nuxt-progress')
-			except Exception as e:
-				print("BeatSage finished loading this song on its webpage, now processing it...")
-				break
-
-		#Temporary submission fix:
 		try:
-			rect.click()
-			rect.click()
-			rect.click()
-			rect.click()
-		except Exception as e:
-			pass
-		
-		#Below commented out because it would work normally but firefox is again fucking stupid
-		"""scrollShim(browser, rect, -900)
-		actions.move_to_element(rect)
-		actions.move_by_offset(-150, 0)
-		actions.click_and_hold()
-		actions.move_by_offset(150, 0)
-		actions.release()
-		actions.perform()"""
+			print("Starting to work on song " + str(counter) + " of " + str(total))
+			browser = Firefox(options=opts)
+			browser.get(BEATSAGE)
+			actions = ActionChains(browser)
 
-		print("BeatSage is processing this song right now, this is the longest step and could take awhile, usually one to three minutes...")
-		start = time()
-		while(len([name for name in os.listdir('.') if os.path.isfile(name)]) == fileCount): sleep(1)
-		finish = time() - start
-		print("Processing and download for this song complete. Time taken: " + str(finish)[0:5] + " seconds\n")
-		counter += 1
-		browser.close()
+			fileCount = len([name for name in os.listdir('.') if os.path.isfile(name)])
+			#Find input tag with value Hard, Expert, ExpertPlus, 90Degree, Standard, Bombs, DotBlocks, Obstacles
+			inputs = browser.find_elements(By.TAG_NAME, 'input') #All input tags from page
+			textinputand = inputs[0:2] #the url text field for song, and something else
+			diffinputs = inputs[2:6] #The inputs for difficulties
+			gamemodeinputs = inputs[6:10] #inputs for game modes, patreon disabled ones removed
+			eventinputs = inputs[11:14] #inputs for bombs and other song events
+			advsettings = browser.find_elements(By.TAG_NAME, 'select')
+
+			inputs[0].send_keys(link) #Add a youtube link to the text field
+			buttons = browser.find_elements(By.TAG_NAME, 'button') #buttons[0] contains the magnifying glass search button we want
+			buttons[0].click()
+
+			print("Setting difficulties...")
+			for i in diffinputs:
+				if i.get_attribute("value") not in difficulties and i.is_selected():
+					#scrollShim(browser, i, -550)
+					#actions.move_to_element(i).click().perform()
+					span = i.find_element(By.XPATH, '..')
+					span.click()
+				if i.get_attribute("value") in difficulties and not i.is_selected():
+					#print("    " + str(i.get_attribute("value")) + "was " + str(i.is_selected()))
+					#scrollShim(browser, i, -550)
+					#actions.move_to_element(i).click().perform()
+					span = i.find_element(By.XPATH, '..')
+					span.click()
+					#print("    " + str(i.get_attribute("value")) + "is now " + str(i.is_selected()))
+
+			print("Setting game modes...")
+			for i in gamemodeinputs:
+				if i.get_attribute("value") not in gamemodes and i.is_selected():
+					#scrollShim(browser, i, -550)
+					#actions.move_to_element(i).click().perform()
+					span = i.find_element(By.XPATH, '..')
+					span.click()
+				if i.get_attribute("value") in gamemodes and not i.is_selected():
+					#scrollShim(browser, i, -550)
+					#actions.move_to_element(i).click().perform()
+					span = i.find_element(By.XPATH, '..')
+					span.click()
+
+			print("Setting events...")
+			for i in eventinputs:
+				if i.get_attribute("value") not in events and i.is_selected():
+					#scrollShim(browser, i, -550)
+					#actions.move_to_element(i).click().perform()
+					span = i.find_element(By.XPATH, '..')
+					span.click()
+				if i.get_attribute("value") in events and not i.is_selected():
+					#scrollShim(browser, i, -550)
+					#actions.move_to_element(i).click().perform()
+					span = i.find_element(By.XPATH, '..')
+					span.click()
+
+			print("Setting the environment and model version...")
+			div = browser.find_element_by_id("contentIdForA11y1")
+			browser.execute_script("arguments[0].setAttribute(\"style\", \"\")", div)
+			env = Select(advsettings[0])
+			modelversion = Select(advsettings[1])
+			env.select_by_value(environment)
+			modelversion.select_by_value(model)
+
+			#Submit and have it start working on your song
+			g = browser.find_element_by_id('bottom') #top rect says cant click
+			rect = g.find_element_by_class_name('red')
+			
+			while True:
+				try:
+					divcheck = browser.find_element_by_class_name('nuxt-progress')
+				except Exception as e:
+					print("BeatSage finished loading this song on its webpage, now processing it...")
+					break
+
+			#Temporary submission fix:
+			try:
+				rect.click()
+				rect.click()
+				rect.click()
+				rect.click()
+			except Exception as e:
+				pass
+			
+			#Below commented out because it would work normally but firefox is again fucking stupid
+			"""scrollShim(browser, rect, -900)
+			actions.move_to_element(rect)
+			actions.move_by_offset(-150, 0)
+			actions.click_and_hold()
+			actions.move_by_offset(150, 0)
+			actions.release()
+			actions.perform()"""
+			sleep(1)
+			try:
+				uploadingCheck = browser.find_element_by_class_name("uploading")
+			except Exception as e:
+				print("Beat Sage couldn't process this song for some reason. It said to try again later. Skipping this song and moving onto the next...")
+				counter += 1
+				browser.close()
+				continue
+			print("BeatSage is processing this song right now, this is the longest step and could take awhile, usually one to three minutes...")
+			start = time()
+			while(len([name for name in os.listdir('.') if os.path.isfile(name)]) == fileCount): sleep(1)
+			finish = time() - start
+			print("Processing and download for this song complete. Time taken: " + str(finish)[0:5] + " seconds\n")
+			counter += 1
+			browser.close()
+		except Exception as e:
+			print("Some unknown error has occurred on this song. Skipping it and trying the next song")
+			counter += 1
+			browser.close()
+			continue
 	print("Done downloading every beatmap. Unzipping contents to same folder...")
 	unzipandclean()
 	print("All finished. Enjoy :)")
@@ -314,6 +337,9 @@ if __name__ == "__main__":
 	if "unzip" in sys.argv:
 		unzipandclean()
 		exit()
+	'''if "nocheck" in sys.argv:
+		links = setLinks(sys.argv[1], False)
+	else: '''
 	links = setLinks(sys.argv[1])
 	opts = setOptions(sys.argv[2:])
 	main(links, opts)
