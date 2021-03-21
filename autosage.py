@@ -92,6 +92,7 @@ def setOptions(args):
 
 def setLinks(playlist, check=True):
 	titles = {}
+	links = []
 	print("Getting your songs from your playlist...")
 	opts = Options()
 	opts.headless = True
@@ -102,7 +103,8 @@ def setLinks(playlist, check=True):
 	for link in linksAsATags:
 		if link.get_attribute("class") == "yt-simple-endpoint style-scope ytd-playlist-video-renderer":
 			print(link.text)
-			titles[link.get_attribute("title")] = link.get_attribute("href") #Key = title Value = its link
+			links.append(link.get_attribute("href"))
+			#titles[link.get_attribute("title")] = link.get_attribute("href") #Key = title Value = its link
 	'''
 	if check:
 		print("Checking if any songs in the playlist have already been beatsage'd (to skip them)")
@@ -131,7 +133,7 @@ def main(links, options):
 	print("Your selected events: " + str(events))
 	print("Your environment: " + environment)
 	print("Your model: " + model)
-	print("Do CTRL+C (CMD+C on Mac) if any of these seem wrong to fix them before continuing.\n")
+	print("Do CTRL+C (CMD+C on Mac) if any of these seem wrong to fix them before continuing. Warning: Do not add or remove files from the folder this script is running from or it could cause the script to fail to download one or more songs. \n")
 	sleep(1)
 	opts = Options()
 	opts.headless = True
