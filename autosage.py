@@ -1,4 +1,5 @@
 import sys
+import signal
 import os
 import zipfile
 from time import sleep, time
@@ -9,6 +10,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import Select
 
 BEATSAGE = 'https://beatsage.com/#'
+browser = None #Just make our browser global so I can attempt to access it anywhere
 
 def setOptions(args):
 	difficulties = []
@@ -285,63 +287,69 @@ def unzipandclean(): #Unzips any zip files in cwd and deletes the zip files.
 	print("Done unzipping all files!")
 
 if __name__ == "__main__":
-	if len(sys.argv) == 1:
-		print(" HOW TO USE: ")
-		print("""
- Copy paste your playlist link, followed by every BeatSage option you want ticked ON, with a space between each! \n
- Example with all options on, environment default, model set to V2-Flow:
- python autosage.py https://www.youtube.com/watch?v=q6EoRBvdVPQ&list=PLZ4DbyIWUwCq4V8bIEa8jm2ozHZVuREJP n h e ep s 90 no 1s b db o default v2f
+	try:
+		if len(sys.argv) == 1:
+			print(" HOW TO USE: ")
+			print("""
+	 Copy paste your playlist link, followed by every BeatSage option you want ticked ON, with a space between each! \n
+	 Example with all options on, environment default, model set to V2-Flow:
+	 python autosage.py https://www.youtube.com/watch?v=q6EoRBvdVPQ&list=PLZ4DbyIWUwCq4V8bIEa8jm2ozHZVuREJP n h e ep s 90 no 1s b db o default v2f
 
-	List of options:
+		List of options:
 
-	n - Normal
-	h - Hard
-	e - Expert
-	ep - Expert Plus
-	s - Standard
-	90 - 90 Degrees
-	no - No Arrows
-	1s - One Saber
-	b - Bombs
-	db - Dot Blocks
-	o - Obstacles
+		n - Normal
+		h - Hard
+		e - Expert
+		ep - Expert Plus
+		s - Standard
+		90 - 90 Degrees
+		no - No Arrows
+		1s - One Saber
+		b - Bombs
+		db - Dot Blocks
+		o - Obstacles
 
-	Misc options:
+		Misc options:
 
-	unzip - If there is an issue during the runtime of the script, or you just wanted to, this will mass unzip all zipped folders and delete the zipped versions, use this option
+		unzip - If there is an issue during the runtime of the script, or you just wanted to, this will mass unzip all zipped folders and delete the zipped versions, use this option
 
-	Environments (select one):
+		Environments (select one):
 
-	default
-	origins
-	triangle
-	nice
-	big mirror
-	imagine dragons
-	kda
-	monstercat
-	crab rave
-	panic at the disco
-	rocket league
-	green day
-	green day grenade
-	timbaland
-	fitbeat
-	linkin park
+		default
+		origins
+		triangle
+		nice
+		big mirror
+		imagine dragons
+		kda
+		monstercat
+		crab rave
+		panic at the disco
+		rocket league
+		green day
+		green day grenade
+		timbaland
+		fitbeat
+		linkin park
 
-	Models (select one):
+		Models (select one):
 
-	v2
-	v2f
-	v1
-	""")
-		quit()
-	if "unzip" in sys.argv:
-		unzipandclean()
-		exit()
-	'''if "nocheck" in sys.argv:
-		links = setLinks(sys.argv[1], False)
-	else: '''
-	links = setLinks(sys.argv[1])
-	opts = setOptions(sys.argv[2:])
-	main(links, opts)
+		v2
+		v2f
+		v1
+		""")
+			quit()
+		if "unzip" in sys.argv:
+			unzipandclean()
+			exit()
+		'''if "nocheck" in sys.argv:
+			links = setLinks(sys.argv[1], False)
+		else: '''
+		links = setLinks(sys.argv[1])
+		opts = setOptions(sys.argv[2:])
+		main(links, opts)
+	except KeyboardInterrupt as e: #Catch SIGINT and attempt to close firefox if it was still open
+		try:
+			browser.close()
+		except Exception as e:
+			pass
