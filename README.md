@@ -8,7 +8,7 @@ A Python script by Alan
 - FireFox browser (just need to install FireFox on your computer, the script will open FireFox in the background to access the website)
 - selenium (you can quickly install selenium by doing: `pip install selenium` in terminal once Python is installed)
 
-**Get started:**
+**Get started: (assumes you have the above ready to go)**
 
 1. Download autosage.py to your computer.
 2. Put autosage.py in your custom levels folder (not required but recommended)
