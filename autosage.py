@@ -158,10 +158,10 @@ def main(links, options):
 	opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/octet-stream")
 	opts.set_preference("browser.helperApps.neverAsk.openFile", "application/octet-stream")
 	for link in links:
-		if(start > counter):
+		if start > counter:
 			counter += 1
 			continue
-		if(end != -1 and counter > end):
+		if end != -1 and counter > end:
 			break
 		try:
 			print("Starting to work on song " + str(counter) + " of " + str(total))
@@ -268,9 +268,9 @@ def main(links, options):
 				browser.close()
 				continue
 			print("BeatSage is processing this song right now, this is the longest step and could take awhile, usually one to three minutes...")
-			start = time()
+			startTime = time()
 			while(len([name for name in os.listdir('.') if os.path.isfile(name)]) == fileCount): sleep(1)
-			finish = time() - start
+			finishTime = time() - startTime
 			print("Processing and download for this song complete. Time taken: " + str(finish)[0:5] + " seconds\n")
 			counter += 1
 			browser.close()
