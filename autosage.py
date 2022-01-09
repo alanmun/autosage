@@ -18,6 +18,15 @@ def setOptions(args):
 	events = []
 	environment = "DefaultEnvironment"
 	model = "v2-flow"
+	start = 1
+	end = -1
+
+	for item in args:
+		if "start=" in item:
+			start = item[6:]
+		if "end=" in item:
+			end = item[4:]
+
 	if 'n' in args:
 		if "Normal" not in difficulties: difficulties.append("Normal")
 	if 'h' in args:
@@ -89,7 +98,7 @@ def setOptions(args):
 	elif 'v1' in args:
 		model = "v1"
 
-	options = [difficulties, gamemodes, events, environment, model]
+	options = [difficulties, gamemodes, events, environment, model, start, end]
 	return options
 
 def setLinks(playlist, check=True):
@@ -128,6 +137,8 @@ def main(links, options):
 	events = options[2]
 	environment = options[3]
 	model = options[4]
+	start = int(options[5])
+	end = int(options[6])
 	counter = 1
 	total = len(links)
 	print("Your selected difficulties: " + str(difficulties))
@@ -147,6 +158,11 @@ def main(links, options):
 	opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/octet-stream")
 	opts.set_preference("browser.helperApps.neverAsk.openFile", "application/octet-stream")
 	for link in links:
+		if(start > counter):
+			counter += 1
+			continue
+		if(end != -1 and counter > end):
+			break
 		try:
 			print("Starting to work on song " + str(counter) + " of " + str(total))
 			browser = Firefox(options=opts)
@@ -311,7 +327,9 @@ if __name__ == "__main__":
 
 		Misc options:
 
-		unzip - If there is an issue during the runtime of the script, or you just wanted to, this will mass unzip all zipped folders and delete the zipped versions, use this option
+		start=XX - where XX is some number, tells where to start in the playlist if you don't want to start at beginning of it
+		end=XX - where to stop in playlist where XX is some number
+		unzip - shortcut command that will just unzip anything zipped in your custom levels folder, then deletes the zipped versions of them.
 
 		Environments (select one):
 
@@ -337,6 +355,9 @@ if __name__ == "__main__":
 		v2
 		v2f
 		v1
+
+		Note: If you get Message: process unexpected closed with status 0 as a selenium exception, that is because Firefox needs to update. Try again after its up to date.
+		Note: If you get Message: Unable to locate element: [] make sure you are in the overall page for the playlist, not a specific song in that playlist
 		""")
 			quit()
 		if "unzip" in sys.argv:
