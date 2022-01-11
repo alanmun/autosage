@@ -1,7 +1,8 @@
 import sys
-import signal
 import os
 import zipfile
+from tkinter import *
+from tkinter import ttk
 from time import sleep, time
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
@@ -12,99 +13,35 @@ from selenium.webdriver.support.ui import Select
 BEATSAGE = 'https://beatsage.com/#'
 browser = None #Just make our browser global so I can attempt to access it anywhere
 
-def setOptions(args):
+def setOptions():
 	difficulties = []
 	gamemodes = []
 	events = []
-	environment = "DefaultEnvironment"
-	model = "v2-flow"
-	start = 1
-	end = -1
 
-	for item in args:
-		if "start=" in item:
-			start = item[6:]
-		if "end=" in item:
-			end = item[4:]
+	if isNormal.get(): difficulties.append("Normal")
+	if isHard.get(): difficulties.append("Hard")
+	if isExpert.get(): difficulties.append("Expert")
+	if isExpertPlus.get(): difficulties.append("ExpertPlus")
 
-	if 'n' in args:
-		if "Normal" not in difficulties: difficulties.append("Normal")
-	if 'h' in args:
-		if "Hard" not in difficulties: difficulties.append("Hard")
-	if 'e' in args:
-		if "Expert" not in difficulties: difficulties.append("Expert")
-	if 'ep' in args:
-		if "ExpertPlus" not in difficulties: difficulties.append("ExpertPlus")
-	if "n" not in args and 'h' not in args and 'e' not in args and 'ep' not in args: #If none are included, default to all
-		difficulties = ["Normal", "Hard", "Expert", "ExpertPlus"]
+	if isStandard.get(): gamemodes.append("Standard")
+	if isNinety.get(): gamemodes.append("90Degree")
+	if isNoarrows.get(): gamemodes.append("NoArrows")
+	if isOnesaber.get(): gamemodes.append("OneSaber")
 
-	if 's' in args:
-		gamemodes.append("Standard")
-	if '90' in args:
-		gamemodes.append("90Degree")
-	if 'no' in args:
-		gamemodes.append("NoArrows")
-	if '1s' in args:
-		gamemodes.append("OneSaber")
-	if 's' not in args and '90' not in args and 'no' not in args and '1s' not in args: #If no game modes given, default to Standard only
-		gamemodes = ["Standard"]
+	if isBombs.get(): events.append("Bombs")
+	if isDotblocks.get(): events.append("DotBlocks")
+	if isObstacles.get(): events.append("Obstacles")
 
-	if 'b' in args:
-		events.append("Bombs")
-	if 'db' in args:
-		events.append("DotBlocks")
-	if 'o' in args:
-		events.append("Obstacles")
-	if 'b' not in args and 'db' not in args and 'o' not in args: #If no event options given, default to all
-		events = ["Bombs", "DotBlocks", "Obstacles"]
+	if start.get() == "": start.set("0")
+	if end.get() == "": end.set("-1")
 
-	if 'default' in args:
-		environment = "DefaultEnvironment"
-	elif 'origins' in args:
-		environment = "Origins"
-	elif 'triangle' in args:
-		environment = "TriangleEnvironment"
-	elif 'nice' in args:
-		environment = "NiceEnvironment"
-	elif 'big mirror' in args:
-		environment = "BigMirrorEnvironment"
-	elif 'imagine dragons' in args:
-		environment = "DragonsEnvironment"
-	elif 'kda' in args:
-		environment = "KDAEnvironment"
-	elif 'monstercat' in args:
-		environment = "MonstercatEnvironment"
-	elif 'crab rave' in args:
-		environment = "CrabRaveEnvironment"
-	elif 'panic at the disco' in args:
-		environment = "PanicEnvironment"
-	elif 'rocket league' in args:
-		environment = "RocketEnvironment"
-	elif 'green day' in args:
-		environment = "GreenDayEnvironment"
-	elif 'green day grenade' in args:
-		environment = "GreenDayGrenadeEnvironment"
-	elif 'timbaland' in args:
-		environment = "TimbalandEnvironment"
-	elif 'fitbeat' in args:
-		environment = "FitBeatEnvironment"
-	elif 'linkin park' in args:
-		environment = "LinkinParkEnvironment"
-
-	if 'v2' in args:
-		model = "v2"
-	elif 'v2f' in args:
-		model = "v2-flow"
-	elif 'v1' in args:
-		model = "v1"
-
-	options = [difficulties, gamemodes, events, environment, model, start, end]
+	options = [difficulties, gamemodes, events, envChoice.get(), modelChoice.get(), int(start.get()), int(end.get())]
 	return options
 
 def setLinks(playlist, check=True):
-	titles = {}
+	#titles = {}
 	links = []
-	print("Getting your songs from your playlist...")
+	status.set("Getting your songs from your playlist...")
 	opts = Options()
 	opts.headless = True
 	browser = Firefox(options=opts)
@@ -113,40 +50,43 @@ def setLinks(playlist, check=True):
 	linksAsATags = div.find_elements(By.TAG_NAME, "a")
 	for link in linksAsATags:
 		if link.get_attribute("class") == "yt-simple-endpoint style-scope ytd-playlist-video-renderer":
-			print(link.text)
+			status.set(link.text)
 			links.append(link.get_attribute("href"))
 			#titles[link.get_attribute("title")] = link.get_attribute("href") #Key = title Value = its link
 	'''
 	if check:
-		print("Checking if any songs in the playlist have already been beatsage'd (to skip them)")
+		status.set("Checking if any songs in the playlist have already been beatsage'd (to skip them)")
 		for folder in (item for item in os.listdir(os.getcwd()) if os.path.isdir(os.getcwd() + "\\" + item)):
 			for title in titles.keys():
 				if title in folder:
-					print(title + " was already found in folder: " + folder + ", skipping")
+					status.set(title + " was already found in folder: " + folder + ", skipping")
 					titles[title] = ""
 	links = [i for i in titles.values() if i] #If string is anything but empty string it should be True. "" evals to False
 	'''
 	browser.close()
-	print("Done.")
+	status.set("Done.")
 	sleep(1)
 	return links
 
-def main(links, options):
+def main():
+	links = setLinks(linkChoice.get())
+	options = setOptions()
+
 	difficulties = options[0]
 	gamemodes = options[1]
 	events = options[2]
 	environment = options[3]
 	model = options[4]
-	start = int(options[5])
-	end = int(options[6])
+	start: int = options[5]
+	end: int = options[6]
 	counter = 1
 	total = len(links)
-	print("Your selected difficulties: " + str(difficulties))
-	print("Your selected gamemodes: " + str(gamemodes))
-	print("Your selected events: " + str(events))
-	print("Your environment: " + environment)
-	print("Your model: " + model)
-	print("Do CTRL+C (CMD+C on Mac) if any of these seem wrong to fix them before continuing. Warning: Do not add or remove files from the folder this script is running from or it could cause the script to fail to download one or more songs. \n")
+	status.set("Your selected difficulties: " + str(difficulties))
+	status.set("Your selected gamemodes: " + str(gamemodes))
+	status.set("Your selected events: " + str(events))
+	status.set("Your environment: " + environment)
+	status.set("Your model: " + model)
+	status.set("Do CTRL+C (CMD+C on Mac) if any of these seem wrong to fix them before continuing. Warning: Do not add or remove files from the folder this script is running from or it could cause the script to fail to download one or more songs. \n")
 	sleep(1)
 	opts = Options()
 	opts.headless = True
@@ -164,7 +104,7 @@ def main(links, options):
 		if end != -1 and counter > end:
 			break
 		try:
-			print("Starting to work on song " + str(counter) + " of " + str(total))
+			status.set("Starting to work on song " + str(counter) + " of " + str(total))
 			browser = Firefox(options=opts)
 			browser.get(BEATSAGE)
 			actions = ActionChains(browser)
@@ -182,7 +122,7 @@ def main(links, options):
 			buttons = browser.find_elements(By.TAG_NAME, 'button') #buttons[0] contains the magnifying glass search button we want
 			buttons[0].click()
 
-			print("Setting difficulties...")
+			status.set("Setting difficulties...")
 			for i in diffinputs:
 				if i.get_attribute("value") not in difficulties and i.is_selected():
 					#scrollShim(browser, i, -550)
@@ -190,14 +130,14 @@ def main(links, options):
 					span = i.find_element(By.XPATH, '..')
 					span.click()
 				if i.get_attribute("value") in difficulties and not i.is_selected():
-					#print("    " + str(i.get_attribute("value")) + "was " + str(i.is_selected()))
+					#status.set("    " + str(i.get_attribute("value")) + "was " + str(i.is_selected()))
 					#scrollShim(browser, i, -550)
 					#actions.move_to_element(i).click().perform()
 					span = i.find_element(By.XPATH, '..')
 					span.click()
-					#print("    " + str(i.get_attribute("value")) + "is now " + str(i.is_selected()))
+					#status.set("    " + str(i.get_attribute("value")) + "is now " + str(i.is_selected()))
 
-			print("Setting game modes...")
+			status.set("Setting game modes...")
 			for i in gamemodeinputs:
 				if i.get_attribute("value") not in gamemodes and i.is_selected():
 					#scrollShim(browser, i, -550)
@@ -210,7 +150,7 @@ def main(links, options):
 					span = i.find_element(By.XPATH, '..')
 					span.click()
 
-			print("Setting events...")
+			status.set("Setting events...")
 			for i in eventinputs:
 				if i.get_attribute("value") not in events and i.is_selected():
 					#scrollShim(browser, i, -550)
@@ -223,7 +163,7 @@ def main(links, options):
 					span = i.find_element(By.XPATH, '..')
 					span.click()
 
-			print("Setting the environment and model version...")
+			status.set("Setting the environment and model version...")
 			div = browser.find_element_by_id("contentIdForA11y1")
 			browser.execute_script("arguments[0].setAttribute(\"style\", \"\")", div)
 			env = Select(advsettings[0])
@@ -239,7 +179,7 @@ def main(links, options):
 				try:
 					divcheck = browser.find_element_by_class_name('nuxt-progress')
 				except Exception as e:
-					print("BeatSage finished loading this song on its webpage, now processing it...")
+					status.set("BeatSage finished loading this song on its webpage, now processing it...")
 					break
 
 			#Temporary submission fix:
@@ -261,27 +201,32 @@ def main(links, options):
 			actions.perform()"""
 			sleep(1)
 			try:
-				uploadingCheck = browser.find_element_by_class_name("uploading")
+				browser.find_element_by_class_name("uploading")
 			except Exception as e:
-				print("Beat Sage couldn't process this song for some reason. It said to try again later. Skipping this song and moving onto the next...")
+				status.set("Beat Sage couldn't process this song for some reason. It said to try again later. Skipping this song and moving onto the next...")
 				counter += 1
 				browser.close()
 				continue
-			print("BeatSage is processing this song right now, this is the longest step and could take awhile, usually one to three minutes...")
+			status.set("BeatSage is processing this song right now, this is the longest step and could take awhile, usually one to three minutes...")
 			startTime = time()
 			while(len([name for name in os.listdir('.') if os.path.isfile(name)]) == fileCount): sleep(1)
 			finishTime = time() - startTime
-			print("Processing and download for this song complete. Time taken: " + str(finish)[0:5] + " seconds\n")
+			status.set("Processing and download for this song complete. Time taken: " + str(finish)[0:5] + " seconds\n")
 			counter += 1
 			browser.close()
+		except KeyboardInterrupt as e: #Catch SIGINT and attempt to close firefox if it was still open
+			try:
+				browser.close()
+			except Exception as e:
+				pass
 		except Exception as e:
-			print("Some unknown error has occurred on this song. Skipping it and trying the next song")
+			status.set("Some unknown error has occurred on this song. Skipping it and trying the next song")
 			counter += 1
 			browser.close()
 			continue
-	print("Done downloading every beatmap. Unzipping contents to same folder...")
+	status.set("Done downloading every beatmap. Unzipping contents to same folder...")
 	unzipandclean()
-	print("All finished. Enjoy :)")
+	status.set("All finished. Enjoy :)")
 
 def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb apparently
 	x = object.location['x']
@@ -295,82 +240,110 @@ def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb appar
 def unzipandclean(): #Unzips any zip files in cwd and deletes the zip files.
 	for file in os.listdir(os.getcwd()):
 		if file.endswith(".zip"):
-			print("Unzipping " + str(file) + "...    ", end="") #end= prevents a newline
+			status.set("Unzipping " + str(file) + "...    ", end="") #end= prevents a newline
 			with zipfile.ZipFile(file, 'r') as zip_ref:
 				zip_ref.extractall(os.getcwd() + "/" + file[0:-4])
-			print("Done. \n Deleting zip file")
+			status.set("Done. \n Deleting zip file")
 			os.remove(file)
-	print("Done unzipping all files!")
+	status.set("Done unzipping all files!")
 
 if __name__ == "__main__":
-	try:
-		if len(sys.argv) == 1:
-			print(" HOW TO USE: ")
-			print("""
-	 Copy paste your playlist link, followed by every BeatSage option you want ticked ON, with a space between each! \n
-	 Example with all options on, environment default, model set to V2-Flow:
-	 python autosage.py https://www.youtube.com/watch?v=q6EoRBvdVPQ&list=PLZ4DbyIWUwCq4V8bIEa8jm2ozHZVuREJP n h e ep s 90 no 1s b db o default v2f
 
-		List of options:
+	#Build the overall GUI
+	root = Tk()
+	root.title("Autosage")
+	mainframe = ttk.Frame(root, padding="12 12 12 12")
+	mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
+	root.columnconfigure(0, weight=1)
+	root.rowconfigure(0, weight=1)
 
-		n - Normal
-		h - Hard
-		e - Expert
-		ep - Expert Plus
-		s - Standard
-		90 - 90 Degrees
-		no - No Arrows
-		1s - One Saber
-		b - Bombs
-		db - Dot Blocks
-		o - Obstacles
+	#Get playlist link
+	linkLabel = ttk.Label(mainframe, text="Paste a link to a public or unlisted YouTube playlist (not to a song in the playlist but the playlist link itself):").grid(column=0, row=0)
+	linkChoice = StringVar(value="")
+	linkEntry = ttk.Entry(mainframe, textvariable=linkChoice).grid(column=1, row=0, columnspan=4, sticky=(W, E))
 
-		Misc options:
+	#Difficulties
+	difficultiesLabel = ttk.Label(mainframe, text="Difficulties:").grid(column=0, row=1, sticky=(W))
+	isNormal = BooleanVar(value=True)
+	isHard = BooleanVar(value=True)
+	isExpert = BooleanVar(value=True)
+	isExpertPlus = BooleanVar(value=True)
+	normal = ttk.Checkbutton(mainframe, variable=isNormal, text="Normal").grid(column=1, row=1)
+	hard = ttk.Checkbutton(mainframe, variable=isHard, text="Hard").grid(column=2, row=1)
+	expert = ttk.Checkbutton(mainframe, variable=isExpert, text="Expert").grid(column=3, row=1)
+	expertplus = ttk.Checkbutton(mainframe, variable=isExpertPlus, text="Expert Plus").grid(column=4, row=1)
 
-		start=XX - where XX is some number, tells where to start in the playlist if you don't want to start at beginning of it
-		end=XX - where to stop in playlist where XX is some number
-		unzip - shortcut command that will just unzip anything zipped in your custom levels folder, then deletes the zipped versions of them.
+	#Game modes
+	gamemodesLabel = ttk.Label(mainframe, text="Game modes:").grid(column=0, row=2, sticky=(W))
+	isStandard = BooleanVar(value=True)
+	isNinety = BooleanVar(value=True)
+	isNoarrows = BooleanVar(value=False)
+	isOnesaber = BooleanVar(value=False)
+	standard = ttk.Checkbutton(mainframe, variable=isStandard, text="Standard").grid(column=1, row=2)
+	ninety = ttk.Checkbutton(mainframe, variable=isNinety, text="90 Degrees").grid(column=2, row=2)
+	noarrows = ttk.Checkbutton(mainframe, variable=isNoarrows, text="No Arrows").grid(column=3, row=2)
+	onesaber = ttk.Checkbutton(mainframe, variable=isOnesaber, text="One Saber").grid(column=4, row=2)
 
-		Environments (select one):
+	#Events
+	eventsLabel = ttk.Label(mainframe, text="Events:").grid(column=0, row=3, sticky=(W))
+	isBombs = BooleanVar(value=True)
+	isDotblocks = BooleanVar(value=True)
+	isObstacles = BooleanVar(value=True)
+	bombs = ttk.Checkbutton(mainframe, variable=isBombs, text="Bombs").grid(column=1, row=3)
+	dotblocks = ttk.Checkbutton(mainframe, variable=isDotblocks, text="Dot Blocks").grid(column=2, row=3)
+	obstacles = ttk.Checkbutton(mainframe, variable=isObstacles, text="Obstacles").grid(column=3, row=3)
 
-		default
-		origins
-		triangle
-		nice
-		big mirror
-		imagine dragons
-		kda
-		monstercat
-		crab rave
-		panic at the disco
-		rocket league
-		green day
-		green day grenade
-		timbaland
-		fitbeat
-		linkin park
+	#Environments
+	environmentLabel = ttk.Label(mainframe, text="Choose an environment to override with:").grid(column=0, row=4, sticky=(W))
+	envs =	[
+		"",
+		"default",
+		"origins",
+		"triangle",
+		"nice",
+		"big mirror",
+		"imagine dragons",
+		"kda",
+		"monstercat",
+		"crab rave",
+		"panic at the disco",
+		"rocket league",
+		"green day",
+		"green day grenade",
+		"timbaland",
+		"fitbeat",
+		"linkin park"]
+	envChoice = StringVar()
+	envChoice.set(envs[1])
+	environment = ttk.OptionMenu(mainframe, envChoice, *envs).grid(column=1, row=4) #.get() on associated control variable will get the selected choice as a string
 
-		Models (select one):
+	modelLabel = ttk.Label(mainframe, text="Choose a model to create beatmaps with (v2f recommended):").grid(column=0, row=5, sticky=(W))
+	models = ["", "v1", "v2", "v2f"]
+	modelChoice = StringVar()
+	modelChoice.set(models[3])
+	model = ttk.OptionMenu(mainframe, modelChoice, *models).grid(column=1, row=5)
 
-		v2
-		v2f
-		v1
+	startLabel = ttk.Label(mainframe, text="Choose the song number in playlist to start with (1, 2, 99, etc):").grid(column=0, row=6, sticky=(W))
+	start = StringVar(value="0")
+	startCombo = ttk.Entry(mainframe, textvariable=start).grid(column=1, row=6)
+	endLabel = ttk.Label(mainframe, text="Choose the song number in playlist to stop at (1, 2, 99, etc):").grid(column=0, row=7, sticky=(W))
+	end = StringVar(value="")
+	endCombo = ttk.Entry(mainframe, textvariable=end).grid(column=1, row=7)
 
-		Note: If you get Message: process unexpected closed with status 0 as a selenium exception, that is because Firefox needs to update. Try again after its up to date.
-		Note: If you get Message: Unable to locate element: [] make sure you are in the overall page for the playlist, not a specific song in that playlist
-		""")
-			quit()
-		if "unzip" in sys.argv:
-			unzipandclean()
-			exit()
-		'''if "nocheck" in sys.argv:
-			links = setLinks(sys.argv[1], False)
-		else: '''
-		links = setLinks(sys.argv[1])
-		opts = setOptions(sys.argv[2:])
-		main(links, opts)
-	except KeyboardInterrupt as e: #Catch SIGINT and attempt to close firefox if it was still open
-		try:
-			browser.close()
-		except Exception as e:
-			pass
+	startButton = ttk.Button(mainframe, text="Begin!", command=main).grid(column=0, row=8, sticky=(W, E))
+	unzipButton = ttk.Button(mainframe, text="Unzip everything in this folder (and delete any zipped files after)", command=unzipandclean).grid(column=1, row=8, sticky=(W, E))
+
+	status = StringVar()
+	statusLabel = ttk.Label(mainframe, textvariable=status).grid(column=0, row=9, columnspan=5, sticky=(W, E))
+
+	#Pad everything in GUI nicely
+	for child in mainframe.winfo_children(): 
+		child.grid_configure(padx=5, pady=5)
+
+	root.bind("<Return>", startButton) #Hitting enter will press start
+
+	#Start event loop so app displays!
+	root.mainloop()
+
+	#Note: If you get Message: process unexpected closed with status 0 as a selenium exception, that is because Firefox needs to update. Try again after its up to date.
+	#Note: If you get Message: Unable to locate element: [] make sure you are in the overall page for the playlist, not a specific song in that playlist
