@@ -1,6 +1,6 @@
-import sys
 import os
 import zipfile
+from threading import Thread
 from tkinter import *
 from tkinter import ttk
 from time import sleep, time
@@ -12,6 +12,13 @@ from selenium.webdriver.support.ui import Select
 
 BEATSAGE = 'https://beatsage.com/#'
 browser = None #Just make our browser global so I can attempt to access it anywhere
+
+class WorkerThread(Thread):
+	def __init__(self):
+		super().__init__()
+
+	def run(self):
+		main()
 
 def setOptions():
 	difficulties = []
@@ -32,10 +39,10 @@ def setOptions():
 	if isDotblocks.get(): events.append("DotBlocks")
 	if isObstacles.get(): events.append("Obstacles")
 
-	if start.get() == "": start.set("0")
-	if end.get() == "": end.set("-1")
+	startToSend = 0 if start.get() == "" else int(start.get()) 
+	endToSend = -1 if end.get() == "" else int(end.get())
 
-	options = [difficulties, gamemodes, events, envChoice.get(), modelChoice.get(), int(start.get()), int(end.get())]
+	options = [difficulties, gamemodes, events, envChoice.get(), modelChoice.get(), startToSend, endToSend]
 	return options
 
 def setLinks(playlist, check=True):
@@ -80,14 +87,9 @@ def main():
 	start: int = options[5]
 	end: int = options[6]
 	counter = 1
-	total = len(links)
-	status.set("Your selected difficulties: " + str(difficulties))
-	status.set("Your selected gamemodes: " + str(gamemodes))
-	status.set("Your selected events: " + str(events))
-	status.set("Your environment: " + environment)
-	status.set("Your model: " + model)
-	status.set("Do CTRL+C (CMD+C on Mac) if any of these seem wrong to fix them before continuing. Warning: Do not add or remove files from the folder this script is running from or it could cause the script to fail to download one or more songs. \n")
-	sleep(1)
+	total = end if end != -1 else len(links)
+	status.set("Warning: Do not add or remove files from the folder this app is running from or it could cause the script to fail to download one or more songs. \n")
+	sleep(3)
 	opts = Options()
 	opts.headless = True
 	opts.set_preference("browser.download.folderList", 2) #Download to whatever is stated two lines below
@@ -170,14 +172,13 @@ def main():
 			modelversion = Select(advsettings[1])
 			env.select_by_value(environment)
 			modelversion.select_by_value(model)
-
 			#Submit and have it start working on your song
 			g = browser.find_element_by_id('bottom') #top rect says cant click
 			rect = g.find_element_by_class_name('red')
 			
 			while True:
 				try:
-					divcheck = browser.find_element_by_class_name('nuxt-progress')
+					browser.find_element_by_class_name('nuxt-progress')
 				except Exception as e:
 					status.set("BeatSage finished loading this song on its webpage, now processing it...")
 					break
@@ -211,7 +212,7 @@ def main():
 			startTime = time()
 			while(len([name for name in os.listdir('.') if os.path.isfile(name)]) == fileCount): sleep(1)
 			finishTime = time() - startTime
-			status.set("Processing and download for this song complete. Time taken: " + str(finish)[0:5] + " seconds\n")
+			status.set("Processing and download for this song complete. Time taken: " + str(finishTime)[0:5] + " seconds\n")
 			counter += 1
 			browser.close()
 		except KeyboardInterrupt as e: #Catch SIGINT and attempt to close firefox if it was still open
@@ -220,13 +221,14 @@ def main():
 			except Exception as e:
 				pass
 		except Exception as e:
+			print(e)
 			status.set("Some unknown error has occurred on this song. Skipping it and trying the next song")
 			counter += 1
 			browser.close()
 			continue
 	status.set("Done downloading every beatmap. Unzipping contents to same folder...")
 	unzipandclean()
-	status.set("All finished. Enjoy :)")
+	status.set("You're ready to play. Enjoy :)")
 
 def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb apparently
 	x = object.location['x']
@@ -240,18 +242,28 @@ def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb appar
 def unzipandclean(): #Unzips any zip files in cwd and deletes the zip files.
 	for file in os.listdir(os.getcwd()):
 		if file.endswith(".zip"):
-			status.set("Unzipping " + str(file) + "...    ", end="") #end= prevents a newline
+			status.set("Unzipping " + str(file) + "...    ") #end= prevents a newline
 			with zipfile.ZipFile(file, 'r') as zip_ref:
 				zip_ref.extractall(os.getcwd() + "/" + file[0:-4])
-			status.set("Done. \n Deleting zip file")
+			status.set("Done. Deleting zip file")
 			os.remove(file)
 	status.set("Done unzipping all files!")
+
+def createWorker():
+	worker = WorkerThread()
+	worker.start()
+	monitor(worker)
+
+def monitor(thread):
+	if thread.is_alive():
+		root.after(100, lambda: monitor(thread))
 
 if __name__ == "__main__":
 
 	#Build the overall GUI
 	root = Tk()
 	root.title("Autosage")
+	root.iconbitmap(r'C:\\Users\\Alan\\Desktop\\autosage\\autosage.ico')
 	mainframe = ttk.Frame(root, padding="12 12 12 12")
 	mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
 	root.columnconfigure(0, weight=1)
@@ -297,40 +309,40 @@ if __name__ == "__main__":
 	environmentLabel = ttk.Label(mainframe, text="Choose an environment to override with:").grid(column=0, row=4, sticky=(W))
 	envs =	[
 		"",
-		"default",
-		"origins",
-		"triangle",
-		"nice",
-		"big mirror",
-		"imagine dragons",
-		"kda",
-		"monstercat",
-		"crab rave",
-		"panic at the disco",
-		"rocket league",
-		"green day",
-		"green day grenade",
-		"timbaland",
-		"fitbeat",
-		"linkin park"]
+		"DefaultEnvironment",
+		"Origins",
+		"TriangleEnvironment",
+		"NiceEnvironment",
+		"BigMirrorEnvironment",
+		"DragonsEnvironment",
+		"KDAEnvironment",
+		"MonstercatEnvironment",
+		"CrabRaveEnvironment",
+		"PanicEnvironment",
+		"RocketEnvironment",
+		"GreenDayEnvironment",
+		"GreenDayGrenadeEnvironment",
+		"TimbalandEnvironment",
+		"FitBeatEnvironment",
+		"LinkinParkEnvironment"]
 	envChoice = StringVar()
 	envChoice.set(envs[1])
 	environment = ttk.OptionMenu(mainframe, envChoice, *envs).grid(column=1, row=4) #.get() on associated control variable will get the selected choice as a string
 
 	modelLabel = ttk.Label(mainframe, text="Choose a model to create beatmaps with (v2f recommended):").grid(column=0, row=5, sticky=(W))
-	models = ["", "v1", "v2", "v2f"]
+	models = ["", "v1", "v2", "v2-flow"]
 	modelChoice = StringVar()
 	modelChoice.set(models[3])
 	model = ttk.OptionMenu(mainframe, modelChoice, *models).grid(column=1, row=5)
 
 	startLabel = ttk.Label(mainframe, text="Choose the song number in playlist to start with (1, 2, 99, etc):").grid(column=0, row=6, sticky=(W))
-	start = StringVar(value="0")
+	start = StringVar(value="1")
 	startCombo = ttk.Entry(mainframe, textvariable=start).grid(column=1, row=6)
 	endLabel = ttk.Label(mainframe, text="Choose the song number in playlist to stop at (1, 2, 99, etc):").grid(column=0, row=7, sticky=(W))
 	end = StringVar(value="")
 	endCombo = ttk.Entry(mainframe, textvariable=end).grid(column=1, row=7)
 
-	startButton = ttk.Button(mainframe, text="Begin!", command=main).grid(column=0, row=8, sticky=(W, E))
+	startButton = ttk.Button(mainframe, text="Begin!", command=createWorker).grid(column=0, row=8, sticky=(W, E))
 	unzipButton = ttk.Button(mainframe, text="Unzip everything in this folder (and delete any zipped files after)", command=unzipandclean).grid(column=1, row=8, sticky=(W, E))
 
 	status = StringVar()
