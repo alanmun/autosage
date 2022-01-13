@@ -3,6 +3,7 @@ import zipfile
 from threading import Thread
 from tkinter import *
 from tkinter import ttk
+from tkinter import filedialog
 from time import sleep, time
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
@@ -12,6 +13,7 @@ from selenium.webdriver.support.ui import Select
 
 BEATSAGE = 'https://beatsage.com/#'
 browser = None #Just make our browser global so I can attempt to access it anywhere
+customLevelPath = None
 
 class WorkerThread(Thread):
 	def __init__(self):
@@ -79,6 +81,7 @@ def main():
 	links = setLinks(linkChoice.get())
 	options = setOptions()
 
+	global customLevelPath #I doubt this is needed but I cant figure out so far why the fuck oslistdir isn't detecting zips in main, but can in unzipandclean
 	difficulties = options[0]
 	gamemodes = options[1]
 	events = options[2]
@@ -92,11 +95,12 @@ def main():
 	sleep(3)
 	opts = Options()
 	opts.headless = True
-	opts.set_preference("browser.download.folderList", 2) #Download to whatever is stated two lines below
+	opts.set_preference("browser.download.folderList", 2) #Download to our directory, not default Downloads
 	opts.set_preference("browser.download.manager.showWhenStarting", False) #Hide download progress
 	opts.set_preference("browser.download.manager.focusWhenStarting", False)
 	opts.set_preference("browser.helperApps.alwaysAsk.force", False)
-	opts.set_preference("browser.download.dir", os.getcwd()) #Set directory to download to to wherever this script is
+	customPathBackSlashes = customLevelPath.replace("/", "\\")
+	opts.set_preference("browser.download.dir", customPathBackSlashes) #Set directory to download to to wherever this script is
 	opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/octet-stream")
 	opts.set_preference("browser.helperApps.neverAsk.openFile", "application/octet-stream")
 	for link in links:
@@ -111,7 +115,7 @@ def main():
 			browser.get(BEATSAGE)
 			actions = ActionChains(browser)
 
-			fileCount = len([name for name in os.listdir('.') if os.path.isfile(name)])
+			fileCount = len(os.listdir(customLevelPath))
 			#Find input tag with value Hard, Expert, ExpertPlus, 90Degree, Standard, Bombs, DotBlocks, Obstacles
 			inputs = browser.find_elements(By.TAG_NAME, 'input') #All input tags from page
 			textinputand = inputs[0:2] #the url text field for song, and something else
@@ -210,7 +214,7 @@ def main():
 				continue
 			status.set("BeatSage is processing this song right now, this is the longest step and could take awhile, usually one to three minutes...")
 			startTime = time()
-			while(len([name for name in os.listdir('.') if os.path.isfile(name)]) == fileCount): sleep(1)
+			while(len(os.listdir(customLevelPath)) == fileCount): sleep(1)
 			finishTime = time() - startTime
 			status.set("Processing and download for this song complete. Time taken: " + str(finishTime)[0:5] + " seconds\n")
 			counter += 1
@@ -240,16 +244,23 @@ def scrollShim(passed_in_driver, object, offset): #Because FireFox is dumb appar
 	passed_in_driver.execute_script(scroll_by_coord)
 
 def unzipandclean(): #Unzips any zip files in cwd and deletes the zip files.
-	for file in os.listdir(os.getcwd()):
+	if customLevelPath is None: return #Guard against path not supplied
+
+	for file in os.listdir(customLevelPath):
 		if file.endswith(".zip"):
 			status.set("Unzipping " + str(file) + "...    ") #end= prevents a newline
-			with zipfile.ZipFile(file, 'r') as zip_ref:
-				zip_ref.extractall(os.getcwd() + "/" + file[0:-4])
-			status.set("Done. Deleting zip file")
-			os.remove(file)
+			with zipfile.ZipFile(customLevelPath+"/"+file, 'r') as zip_ref:
+				zip_ref.extractall(customLevelPath + "/" + file[0:-4])
+			status.set("Done. Deleting zip file...")
+			os.remove(customLevelPath+"/"+file)
 	status.set("Done unzipping all files!")
 
+def getCustomLevelsPath():
+	global customLevelPath
+	customLevelPath = filedialog.askdirectory()
+
 def createWorker():
+	if customLevelPath is None: return 
 	worker = WorkerThread()
 	worker.start()
 	monitor(worker)
@@ -269,44 +280,50 @@ if __name__ == "__main__":
 	root.columnconfigure(0, weight=1)
 	root.rowconfigure(0, weight=1)
 
+	#Get CustomLevels directory
+	customLevelsLabel = ttk.Label(mainframe, text="First, show me where your CustomLevels folder is, something like: \"...\steamapps\common\Beat Saber\Beat Saber_Data\CustomLevels\":")
+	customLevelsLabel.grid(column=0, row=0, columnspan=2, sticky=(W))
+	customLevelButton = ttk.Button(mainframe, text="Locate Folder", command=getCustomLevelsPath).grid(column=2, row=0, sticky=(W))
+
+
 	#Get playlist link
-	linkLabel = ttk.Label(mainframe, text="Paste a link to a public or unlisted YouTube playlist (not to a song in the playlist but the playlist link itself):").grid(column=0, row=0)
+	linkLabel = ttk.Label(mainframe, text="Paste a link to a public or unlisted YouTube playlist (not to a song in the playlist but the playlist link itself):").grid(column=0, row=1, sticky=(W))
 	linkChoice = StringVar(value="")
-	linkEntry = ttk.Entry(mainframe, textvariable=linkChoice).grid(column=1, row=0, columnspan=4, sticky=(W, E))
+	linkEntry = ttk.Entry(mainframe, textvariable=linkChoice).grid(column=1, row=1, columnspan=4, sticky=(W, E))
 
 	#Difficulties
-	difficultiesLabel = ttk.Label(mainframe, text="Difficulties:").grid(column=0, row=1, sticky=(W))
+	difficultiesLabel = ttk.Label(mainframe, text="Difficulties:").grid(column=0, row=2, sticky=(W))
 	isNormal = BooleanVar(value=True)
 	isHard = BooleanVar(value=True)
 	isExpert = BooleanVar(value=True)
 	isExpertPlus = BooleanVar(value=True)
-	normal = ttk.Checkbutton(mainframe, variable=isNormal, text="Normal").grid(column=1, row=1)
-	hard = ttk.Checkbutton(mainframe, variable=isHard, text="Hard").grid(column=2, row=1)
-	expert = ttk.Checkbutton(mainframe, variable=isExpert, text="Expert").grid(column=3, row=1)
-	expertplus = ttk.Checkbutton(mainframe, variable=isExpertPlus, text="Expert Plus").grid(column=4, row=1)
+	normal = ttk.Checkbutton(mainframe, variable=isNormal, text="Normal").grid(column=1, row=2, sticky=(W))
+	hard = ttk.Checkbutton(mainframe, variable=isHard, text="Hard").grid(column=2, row=2, sticky=(W))
+	expert = ttk.Checkbutton(mainframe, variable=isExpert, text="Expert").grid(column=3, row=2, sticky=(W))
+	expertplus = ttk.Checkbutton(mainframe, variable=isExpertPlus, text="Expert Plus").grid(column=4, row=2, sticky=(W))
 
 	#Game modes
-	gamemodesLabel = ttk.Label(mainframe, text="Game modes:").grid(column=0, row=2, sticky=(W))
+	gamemodesLabel = ttk.Label(mainframe, text="Game modes:").grid(column=0, row=3, sticky=(W))
 	isStandard = BooleanVar(value=True)
 	isNinety = BooleanVar(value=True)
 	isNoarrows = BooleanVar(value=False)
 	isOnesaber = BooleanVar(value=False)
-	standard = ttk.Checkbutton(mainframe, variable=isStandard, text="Standard").grid(column=1, row=2)
-	ninety = ttk.Checkbutton(mainframe, variable=isNinety, text="90 Degrees").grid(column=2, row=2)
-	noarrows = ttk.Checkbutton(mainframe, variable=isNoarrows, text="No Arrows").grid(column=3, row=2)
-	onesaber = ttk.Checkbutton(mainframe, variable=isOnesaber, text="One Saber").grid(column=4, row=2)
+	standard = ttk.Checkbutton(mainframe, variable=isStandard, text="Standard").grid(column=1, row=3, sticky=(W))
+	ninety = ttk.Checkbutton(mainframe, variable=isNinety, text="90 Degrees").grid(column=2, row=3, sticky=(W))
+	noarrows = ttk.Checkbutton(mainframe, variable=isNoarrows, text="No Arrows").grid(column=3, row=3, sticky=(W))
+	onesaber = ttk.Checkbutton(mainframe, variable=isOnesaber, text="One Saber").grid(column=4, row=3, sticky=(W))
 
 	#Events
-	eventsLabel = ttk.Label(mainframe, text="Events:").grid(column=0, row=3, sticky=(W))
+	eventsLabel = ttk.Label(mainframe, text="Events:").grid(column=0, row=4, sticky=(W))
 	isBombs = BooleanVar(value=True)
 	isDotblocks = BooleanVar(value=True)
 	isObstacles = BooleanVar(value=True)
-	bombs = ttk.Checkbutton(mainframe, variable=isBombs, text="Bombs").grid(column=1, row=3)
-	dotblocks = ttk.Checkbutton(mainframe, variable=isDotblocks, text="Dot Blocks").grid(column=2, row=3)
-	obstacles = ttk.Checkbutton(mainframe, variable=isObstacles, text="Obstacles").grid(column=3, row=3)
+	bombs = ttk.Checkbutton(mainframe, variable=isBombs, text="Bombs").grid(column=1, row=4, sticky=(W))
+	dotblocks = ttk.Checkbutton(mainframe, variable=isDotblocks, text="Dot Blocks").grid(column=2, row=4, sticky=(W))
+	obstacles = ttk.Checkbutton(mainframe, variable=isObstacles, text="Obstacles").grid(column=3, row=4, sticky=(W))
 
 	#Environments
-	environmentLabel = ttk.Label(mainframe, text="Choose an environment to override with:").grid(column=0, row=4, sticky=(W))
+	environmentLabel = ttk.Label(mainframe, text="Choose an environment to override with:").grid(column=0, row=5, sticky=(W))
 	envs =	[
 		"",
 		"DefaultEnvironment",
@@ -327,26 +344,26 @@ if __name__ == "__main__":
 		"LinkinParkEnvironment"]
 	envChoice = StringVar()
 	envChoice.set(envs[1])
-	environment = ttk.OptionMenu(mainframe, envChoice, *envs).grid(column=1, row=4) #.get() on associated control variable will get the selected choice as a string
+	environment = ttk.OptionMenu(mainframe, envChoice, *envs).grid(column=1, row=5, sticky=(W)) #.get() on associated control variable will get the selected choice as a string
 
-	modelLabel = ttk.Label(mainframe, text="Choose a model to create beatmaps with (v2f recommended):").grid(column=0, row=5, sticky=(W))
+	modelLabel = ttk.Label(mainframe, text="Choose a model to create beatmaps with (v2f recommended):").grid(column=0, row=6, sticky=(W))
 	models = ["", "v1", "v2", "v2-flow"]
 	modelChoice = StringVar()
 	modelChoice.set(models[3])
-	model = ttk.OptionMenu(mainframe, modelChoice, *models).grid(column=1, row=5)
+	model = ttk.OptionMenu(mainframe, modelChoice, *models).grid(column=1, row=6, sticky=(W))
 
-	startLabel = ttk.Label(mainframe, text="Choose the song number in playlist to start with (1, 2, 99, etc):").grid(column=0, row=6, sticky=(W))
+	startLabel = ttk.Label(mainframe, text="Choose the song number in playlist to start with (1, 2, 99, etc):").grid(column=0, row=7, sticky=(W))
 	start = StringVar(value="1")
-	startCombo = ttk.Entry(mainframe, textvariable=start).grid(column=1, row=6)
-	endLabel = ttk.Label(mainframe, text="Choose the song number in playlist to stop at (1, 2, 99, etc):").grid(column=0, row=7, sticky=(W))
+	startCombo = ttk.Entry(mainframe, textvariable=start).grid(column=1, row=7, sticky=(W))
+	endLabel = ttk.Label(mainframe, text="Choose the song number in playlist to stop at (1, 2, 99, etc):").grid(column=0, row=8, sticky=(W))
 	end = StringVar(value="")
-	endCombo = ttk.Entry(mainframe, textvariable=end).grid(column=1, row=7)
+	endCombo = ttk.Entry(mainframe, textvariable=end).grid(column=1, row=8, sticky=(W))
 
-	startButton = ttk.Button(mainframe, text="Begin!", command=createWorker).grid(column=0, row=8, sticky=(W, E))
-	unzipButton = ttk.Button(mainframe, text="Unzip everything in this folder (and delete any zipped files after)", command=unzipandclean).grid(column=1, row=8, sticky=(W, E))
+	startButton = ttk.Button(mainframe, text="Begin!", command=createWorker).grid(column=0, row=9, sticky=(W, E))
+	unzipButton = ttk.Button(mainframe, text="Unzip & delete everything in CustomLevels", command=unzipandclean).grid(column=1, row=9, columnspan=2, sticky=(W, E))
 
 	status = StringVar()
-	statusLabel = ttk.Label(mainframe, textvariable=status).grid(column=0, row=9, columnspan=5, sticky=(W, E))
+	statusLabel = ttk.Label(mainframe, textvariable=status).grid(column=0, row=10, columnspan=5, sticky=(W, E))
 
 	#Pad everything in GUI nicely
 	for child in mainframe.winfo_children(): 
